@@ -1,5 +1,9 @@
 <template>
-
+  <div class="feature">
+    <a href="http://tv.wteaa.com">
+      <img src="~assets/img/home/recommend_bg.jpg" alt="">
+    </a>
+  </div>
 </template>
 
 <script>
@@ -9,5 +13,7 @@
 </script>
 
 <style scoped>
-
+.feature img{
+  width: 100%;
+}
 </style>
