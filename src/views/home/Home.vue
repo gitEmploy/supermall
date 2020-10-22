@@ -7,8 +7,8 @@
               ref="scroll"
               :probe-type="3"
               @scroll="contentScroll"
-              :pull-up-load="true"
-              @pullingUp="loadMore">
+              :pull-up-load="true">
+<!--          @pullingUp="loadMore-->
           <home-swiper :banners="banners"></home-swiper>
           <recommend-view :recommends="recommends"></recommend-view>
           <feature-view></feature-view>
@@ -35,6 +35,7 @@
   import BackTop from "components/content/BackTop/BackTop";
 
   import {getHomeMultidata,getHomeGoods} from "network/home";
+  import {debounce} from "common/utils";
 
 
   export default {
@@ -85,6 +86,13 @@
       this.getHomeGoods('new')
       this.getHomeGoods('sell')
     },
+    mounted() {
+      const refresh = debounce(this.$refs.scroll.refresh,200)
+      // 3.监听item中图片加载完成
+      this.$bus.$on('itemImageLoad',() =>{
+        refresh()
+      })
+    },
     methods: {
       /**
        * 点击返回顶部的功能
@@ -100,11 +108,11 @@
       /**
        * 上拉加载更多内容
        */
-      loadMore() {
-        this.getHomeGoods(this.currentType)
-
-        this.$refs.scroll.refresh()
-      },
+      // loadMore() {
+      //   this.getHomeGoods(this.currentType)
+      //
+      //   this.$refs.scroll.refreshPull()
+      // },
 
       /**
        * 事件监听的相关方法
@@ -122,6 +130,7 @@
             break
         }
       },
+
       /**
        * 网络请求相关的方法
        */
@@ -138,7 +147,7 @@
           this.goods[type].list.push(...res.data.list)
           this.goods[type].page += 1
 
-          this.$refs.scroll.finishPullUp()
+          // this.$refs.scroll.finishPullUp();
         })
       }
     },

@@ -16,10 +16,10 @@
         type: Number,
         default: 0
       },
-      pullUpLoad: {
-        type: Boolean,
-        default: false
-      }
+      // pullUpLoad: {
+      //   type: Boolean,
+      //   default: false
+      // }
     },
     data() {
       return {
@@ -31,7 +31,7 @@
       this.scroll = new BScroll(this.$refs.wrapper,{
         click: true,
         probeType: this.probeType,
-        pullUpLoad: this.pullUpLoad
+        // pullUpLoad: this.pullUpLoad
       })
 
       // 2.监听滚动的位置
@@ -48,13 +48,14 @@
     methods: {
       // 封装返回顶部功能
       scrollTo(x,y,time=300){
-        this.scroll.scrollTo(x,y,time)
+        this.scroll && this.scroll.scrollTo(x,y,time)
       },
       finishPullUp() {
         this.scroll.finishPullUp()
       },
       refresh() {
-        this.scroll.refresh()
+        console.log('---')
+        this.scroll && this.scroll.refresh()
       }
     }
   }
