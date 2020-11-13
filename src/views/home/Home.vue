@@ -3,18 +3,22 @@
       <nav-bar class="home-nav">
         <div slot="center">购物街</div>
       </nav-bar>
+      <Tab-Control
+        :titles="['流行','新款','精选']"
+        @tabClick="tabClick" ref="tabControl1" class="tab-control" v-show="isTabFixed">
+      </Tab-Control>
       <scroll class="content"
               ref="scroll"
               :probe-type="3"
               @scroll="contentScroll"
-              :pull-up-load="true">
-<!--          @pullingUp="loadMore-->
-          <home-swiper :banners="banners"></home-swiper>
+              :pull-up-load="true"
+              @pullingUp="loadMore">
+          <home-swiper :banners="banners" @swiperImageLoad="swiperImageLoad"></home-swiper>
           <recommend-view :recommends="recommends"></recommend-view>
           <feature-view></feature-view>
-          <Tab-Control class="tab-control"
-                       :titles="['流行','新款','精选']"
-                       @tabClick="tabClick">
+          <Tab-Control
+            :titles="['流行','新款','精选']"
+            @tabClick="tabClick" ref="tabControl2">
           </Tab-Control>
           <goods-list :goods="showGoods"></goods-list>
         </scroll>
@@ -32,10 +36,9 @@
   import TabControl from "components/content/tabControl/TabControl";
   import GoodsList from "components/content/goods/GoodsList";
   import Scroll from "components/common/scroll/Scroll";
-  import BackTop from "components/content/BackTop/BackTop";
 
   import {getHomeMultidata,getHomeGoods} from "network/home";
-  import {debounce} from "common/utils";
+  import {itemListenerMixin,backTopMixin} from "common/mixin";
 
 
   export default {
@@ -47,9 +50,9 @@
       NavBar,
       TabControl,
       GoodsList,
-      Scroll,
-      BackTop
+      Scroll
     },
+    mixins: [itemListenerMixin,backTopMixin],
     data(){
       return {
         banners:[],
@@ -69,14 +72,29 @@
           }
         },
         currentType:'pop',
-        // 是否显示或者隐藏返回顶部的按钮
-        isShowBackTop: false
+        //tab-control的偏移量
+        tabOffsetTop:0,
+        // tab-control的是否吸顶默认不吸顶
+        isTabFixed:false,
+        // 解决离开时记录状态和保存目前的位置
+        saveY:0
       }
     },
     computed: {
       showGoods(){
         return this.goods[this.currentType].list
       }
+    },
+    activated() {
+      this.$refs.scroll.refresh()
+      this.$refs.scroll.scrollTo(0,this.saveY,0)
+    },
+    deactivated() {
+      // 1.保存y值
+      this.saveY = this.$refs.scroll.getScrollY()
+
+      // 2.取消全局事件监听
+      this.$bus.$off('itemImgLoad',this.itemImgListener)
     },
     created() {
       // 1.请求多个数据
@@ -85,13 +103,13 @@
       this.getHomeGoods('pop')
       this.getHomeGoods('new')
       this.getHomeGoods('sell')
+      console.log('home created')
     },
     mounted() {
-      const refresh = debounce(this.$refs.scroll.refresh,200)
-      // 3.监听item中图片加载完成
-      this.$bus.$on('itemImageLoad',() =>{
-        refresh()
-      })
+
+    },
+    destroyed() {
+      console.log('home destroyed')
     },
     methods: {
       /**
@@ -101,19 +119,22 @@
        this.$refs.scroll.scrollTo(0,0,500)
       },
       contentScroll(position) {
-        // console.log(position)
-        this.isShowBackTop = position.y < -1000
-      },
+        // console.log((-position.y) >1000)
+        // 1.判断backtop是否显示
+        this.isShowBackTop = (-position.y) > 1000
 
+        // 2.决定tabControl是否吸顶(position:fixed)
+        this.isTabFixed = (-position.y) > this.tabOffsetTop
+
+
+      },
       /**
        * 上拉加载更多内容
        */
-      // loadMore() {
-      //   this.getHomeGoods(this.currentType)
-      //
-      //   this.$refs.scroll.refreshPull()
-      // },
-
+      loadMore() {
+        this.getHomeGoods(this.currentType)
+        this.$refs.scroll.finishPullUp()
+      },
       /**
        * 事件监听的相关方法
       */
@@ -129,6 +150,8 @@
             this.currentType = 'sell'
             break
         }
+        this.$refs.tabControl1.currentIndex = index
+        this.$refs.tabControl2.currentIndex = index
       },
 
       /**
@@ -149,8 +172,13 @@
 
           // this.$refs.scroll.finishPullUp();
         })
+      },
+
+      swiperImageLoad(){
+        // 1.轮播图图片加载完成的事件监听
+        this.tabOffsetTop = this.$refs.tabControl2.$el.offsetTop
       }
-    },
+    }
   }
 </script>
 
@@ -169,11 +197,6 @@
     right: 0;
     z-index: 10;
   }
-  .tab-control{
-    /*position: sticky;*/
-    top: 44px;
-    z-index: 1;
-  }
   .content{
     /*height: 300px;*/
     overflow: hidden;
@@ -183,10 +206,14 @@
     top: 44px;
     bottom: 49px;
   }
-
+  /*另外一种实现滚动在中间的方法*/
   /*.content{*/
   /*  height: calc(100% - 93px);*/
   /*  overflow: hidden;*/
   /*  margin-top: 44px;*/
   /*}*/
+  .tab-control{
+    position: relative;
+    z-index: 9;
+  }
 </style>
